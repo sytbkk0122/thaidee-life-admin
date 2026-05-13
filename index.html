@@ -380,10 +380,20 @@ body:not(.authenticated) #main-content {
 <!-- 密碼驗證界面 -->
 <div id="password-screen">
   <div class="password-box">
-    <h2>🔐 管理後台</h2>
-    <p>請輸入密碼以訪問後台</p>
-    <input type="password" id="password-input" placeholder="輸入密碼..." onkeypress="if(event.key==='Enter') verifyPassword()">
-    <button onclick="verifyPassword()">登入</button>
+    <div id="password-form">
+      <h2>🔐 管理後台</h2>
+      <p>請輸入密碼以訪問後台</p>
+      <input type="password" id="password-input" placeholder="輸入密碼..." onkeypress="if(event.key==='Enter') verifyPassword()">
+      <button onclick="verifyPassword()">登入</button>
+    </div>
+    <div id="code-form" style="display:none">
+      <h2>✅ 二級驗證</h2>
+      <p>驗證碼已發送到您的郵箱</p>
+      <p style="font-size:12px;color:#888;margin-bottom:16px">sytbkk0122@gmail.com</p>
+      <input type="text" id="code-input" placeholder="輸入 6 位驗證碼..." maxlength="6" onkeypress="if(event.key==='Enter') verifyCode()">
+      <button onclick="verifyCode()">驗證</button>
+      <button onclick="backToPassword()" style="margin-top:10px;background:#ccc;color:#333">返回</button>
+    </div>
   </div>
 </div>
 
@@ -590,15 +600,28 @@ function refreshOrders() {
 <!-- 密碼驗證 JavaScript -->
 <script>
 const ADMIN_PASSWORD = 'syt0122'; // 管理後台密碼
+let verificationCode = null;
+
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 function verifyPassword() {
   const input = document.getElementById('password-input');
   const password = input.value;
 
   if (password === ADMIN_PASSWORD) {
-    // 密碼正確
-    document.body.classList.add('authenticated');
-    localStorage.setItem('admin-auth', 'true');
+    // 密碼正確 → 進入驗證碼驗證
+    verificationCode = generateCode();
+
+    // 顯示驗證碼給用戶（實際應用會發送郵件）
+    console.log('🔐 你的驗證碼是:', verificationCode);
+    alert(`✅ 密碼正確！\n\n🔐 你的驗證碼是：\n\n${verificationCode}\n\n請在下一頁面輸入此驗證碼`);
+
+    // 切換到驗證碼輸入屏幕
+    document.getElementById('password-form').style.display = 'none';
+    document.getElementById('code-form').style.display = 'block';
+    document.getElementById('code-input').focus();
     input.value = '';
   } else {
     // 密碼錯誤
@@ -609,6 +632,40 @@ function verifyPassword() {
       input.style.borderColor = '#ddd';
     }, 1000);
   }
+}
+
+function verifyCode() {
+  const input = document.getElementById('code-input');
+  const code = input.value.trim();
+
+  if (!code) {
+    alert('⚠️ 請輸入驗證碼');
+    return;
+  }
+
+  if (code === verificationCode) {
+    // 驗證碼正確
+    document.body.classList.add('authenticated');
+    localStorage.setItem('admin-auth', 'true');
+    input.value = '';
+    alert('✅ 驗證成功！');
+  } else {
+    // 驗證碼錯誤
+    input.style.borderColor = '#e53935';
+    input.value = '';
+    alert('❌ 驗證碼錯誤，請重試');
+    setTimeout(() => {
+      input.style.borderColor = '#ddd';
+    }, 1000);
+  }
+}
+
+function backToPassword() {
+  document.getElementById('password-form').style.display = 'block';
+  document.getElementById('code-form').style.display = 'none';
+  document.getElementById('password-input').focus();
+  document.getElementById('code-input').value = '';
+  verificationCode = null;
 }
 
 // 頁面加載時檢查是否已認證
